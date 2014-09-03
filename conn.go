@@ -43,6 +43,13 @@ type Conn struct {
 	once          sync.Once
 }
 
+// poolConn is a wrapper around ldap.Conn to modify the behavior of
+// net.Conn's Close() method.
+type poolConn struct {
+  ldap.Conn
+  c *channelPool
+}
+
 // Dial connects to the given address on the given network using net.Dial
 // and then returns a new Conn for the connection.
 func Dial(network, addr string) (*Conn, error) {
@@ -335,3 +342,14 @@ func (l *Conn) Ping() error {
   return nil
 }
 
+// Release() puts the given connects back to the pool.
+func (p poolConn) Release() error {
+  return p.c.put(p.Conn)
+}
+
+// newConn wraps ldap.Conn to a poolConn ldap.Conn.
+func (c *channelPool) wrapConn(conn ldap.Conn) ldap.Conn {
+  p := poolConn{c: c}
+  p.Conn = conn
+  return p
+}
