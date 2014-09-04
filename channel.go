@@ -3,7 +3,6 @@ package ldap
 import (
 	"errors"
 	"fmt"
-	"net"
 	"sync"
 )
 
@@ -11,14 +10,14 @@ import (
 type channelPool struct {
 	// storage for our net.Conn connections
 	mu    sync.Mutex
-	conns chan ldap.Conn
+	conns chan Conn
 
 	// net.Conn generator
 	factory Factory
 }
 
 // Factory is a function to create new connections.
-type Factory func() (ldap.Conn, error)
+type Factory func() (Conn, error)
 
 // NewChannelPool returns a new pool based on buffered channels with an initial
 // capacity and maximum capacity. Factory is used when initial capacity is
@@ -32,7 +31,7 @@ func NewChannelPool(initialCap, maxCap int, factory Factory) (Pool, error) {
 	}
 
 	c := &channelPool{
-		conns:   make(chan ldap.Conn, maxCap),
+		conns:   make(chan Conn, maxCap),
 		factory: factory,
 	}
 
@@ -50,7 +49,7 @@ func NewChannelPool(initialCap, maxCap int, factory Factory) (Pool, error) {
 	return c, nil
 }
 
-func (c *channelPool) getConns() chan ldap.Conn {
+func (c *channelPool) getConns() chan Conn {
 	c.mu.Lock()
 	conns := c.conns
 	c.mu.Unlock()
@@ -60,7 +59,7 @@ func (c *channelPool) getConns() chan ldap.Conn {
 // Get implements the Pool interfaces Get() method. If there is no new
 // connection available in the pool, a new connection will be created via the
 // Factory() method.
-func (c *channelPool) Get() (ldap.Conn, error) {
+func (c *channelPool) Get() (Conn, error) {
 	conns := c.getConns()
 	if conns == nil {
 		return nil, ErrClosed
@@ -87,7 +86,7 @@ func (c *channelPool) Get() (ldap.Conn, error) {
 
 // put puts the connection back to the pool. If the pool is full or closed,
 // conn is simply closed. A nil conn will be rejected.
-func (c *channelPool) put(conn ldap.Conn) error {
+func (c *channelPool) put(conn Conn) error {
 	if conn == nil {
 		return errors.New("connection is nil. rejecting")
 	}

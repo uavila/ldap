@@ -46,7 +46,7 @@ type Conn struct {
 // poolConn is a wrapper around ldap.Conn to modify the behavior of
 // net.Conn's Close() method.
 type poolConn struct {
-  ldap.Conn
+  Conn
   c *channelPool
 }
 
@@ -348,7 +348,7 @@ func (p poolConn) Release() error {
 }
 
 // newConn wraps ldap.Conn to a poolConn ldap.Conn.
-func (c *channelPool) wrapConn(conn ldap.Conn) ldap.Conn {
+func (c *channelPool) wrapConn(conn Conn) poolConn {
   p := poolConn{c: c}
   p.Conn = conn
   return p
